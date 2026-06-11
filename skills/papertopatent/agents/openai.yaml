@@ -1,0 +1,4 @@
+interface:
+  display_name: "Papertopatent"
+  short_description: "Turn English papers into Chinese invention patent filing files."
+  default_prompt: "Use $papertopatent to convert my English manuscript into Chinese invention patent filing documents."
