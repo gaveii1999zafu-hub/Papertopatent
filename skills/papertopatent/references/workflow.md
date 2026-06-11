@@ -1,161 +1,623 @@
-# Papertopatent Workflow
+# Papertopatent：英文论文转中国发明专利四件套工作流
 
-## 1. Input Intake
+本文件是 Papertopatent Skill 的核心执行协议。它的目标不是把英文论文翻译成中文，而是把论文中的技术事实、实验数据、图片证据和应用场景重新组织成中国发明专利申请文件。
 
-Collect and inspect:
-
-- English manuscript or paper (`.docx`, `.pdf`, Markdown, or pasted text);
-- all main figures and supplementary figures;
-- supporting information and methods;
-- videos or demos if they show application scenarios;
-- existing Chinese patent draft, if any;
-- official format templates, if supplied.
-
-Prefer local files over web search. Use web search only for current/verifiable patent prior art or when the user explicitly asks for online patent reading.
-
-## 2. Extract the Invention
-
-Create an internal invention map:
-
-- Chinese invention title;
-- technical field;
-- prior-art defects;
-- actual technical problem;
-- core technical solution;
-- key components/materials;
-- preparation route;
-- device or system structure;
-- application scenarios;
-- experimental support;
-- comparative examples;
-- drawing list and abstract drawing candidate.
-
-For a paper, do not preserve the paper narrative. Convert from “result story” to “structure-method-effect” patent logic.
-
-## 3. Prior-Art Reading
-
-When possible, read at least 20 relevant Chinese invention patents before final claim strategy. Cover:
-
-- same material class;
-- same preparation mechanism;
-- same device/use scenario;
-- same performance function;
-- same self-powered/sensing architecture if relevant.
-
-Record what is already crowded and what combination remains distinctive. Do not claim broad concepts already disclosed by many patents.
-
-## 4. Claim Strategy
-
-Build claims in layers:
-
-1. independent material/composition claim;
-2. dependent structural/component claims;
-3. independent preparation method claim;
-4. dependent parameter/process claims;
-5. independent product/device claim if relevant;
-6. independent use/application claim if it has a specific scenario.
-
-Strong Chinese invention patent claims usually protect reproducible technical features, not adjectives such as “high-performance” or “excellent”.
-
-Avoid claim language such as “as shown in Figure...” in claims.
-
-## 5. Specification Structure
-
-Generate `100002说明书.docx` with:
-
-- title;
-- 技术领域;
-- 背景技术;
-- 发明内容;
-- 附图说明;
-- 具体实施方式;
-- examples;
-- comparative examples;
-- test methods;
-- test results.
-
-No inserted figures in the specification body when a separate `说明书附图` file is required.
-
-## 6. Drawings File
-
-Generate `100003说明书附图.docx` separately.
-
-Use main figures that support claims. If the source paper contains complex multi-panel scientific figures, keep them for draft use but recommend later conversion to patent drawings with numeric reference signs.
-
-Include captions:
-
-- 图1 ...
-- 图2 ...
-- ...
-
-Keep drawings large, clear, separated, and centered. Avoid crowded figure text where possible.
-
-## 7. Abstract File
-
-Generate `100004说明书摘要.docx` with:
-
-- one Chinese abstract paragraph;
-- no heading before the abstract text unless the template requires it;
-- no more than 300 Chinese characters by default;
-- one abstract figure, preferably the figure showing the overall structure or application mechanism.
-
-The abstract must mention technical field, technical problem, core solution, and main use. Do not write a paper-style abstract.
-
-## 8. Four-File Output
-
-Always output:
+默认最终交付四个 `.docx` 文件：
 
 - `100001权利要求书.docx`
 - `100002说明书.docx`
 - `100003说明书附图.docx`
 - `100004说明书摘要.docx`
 
-If a legacy `.doc` template is supplied, still honor the user's current instruction. If the user requires `.docx`, output `.docx`.
+## 0. 第一原则
 
-## 9. Structural QA
+- 论文讲的是科学发现和结果叙事；发明专利讲的是可保护的技术方案、可实施的技术手段和可证明的技术效果。
+- 不要逐段翻译英文论文。必须先抽取证据，再建立发明图谱，再确定权利要求保护边界，最后重写为专利文件。
+- 不编造任何数据、比例、工艺参数、仪器型号、图像含义、对比例或现有技术文献。缺失事实统一标记为 `待发明人确认`。
+- 不保留模板旧技术内容。模板只提供格式，所有正文技术内容都应替换。
+- 权利要求书中不得插入图片，不得写“如图所示”，不得依赖论文图号。
+- 说明书正文中通常不插入原始论文图，附图统一放入 `100003说明书附图.docx`；若用户模板另有要求，以模板为准。
+- 专利用语要统一使用“本发明”“所述”“优选地”“进一步地”“在一些实施方式中”“实施例”“对比例”等表达。
+- 禁止论文式表达，例如“本文”“本研究”“we”“our”“this study”“significant”“excellent”“novel”“breakthrough”“the mechanism was investigated”。
+- 每项独立权利要求必须能在说明书中找到支持；每个关键技术效果必须能在实施例、对比例、测试结果或图片观察中找到依据。
 
-Check:
+## 1. 建立工作目录
 
-- all files exist and are `.docx`;
-- claims file has claims only and no figures;
-- specification has required sections and no inserted figures;
-- drawings file has expected image count;
-- abstract file has exactly one abstract figure unless user requests otherwise;
-- text uses justified alignment for body and claims;
-- abstract length is under 300 Chinese characters;
-- old template residue is absent;
-- output files open in Word or python-docx; render visually if a renderer is available.
+在项目目录内建立清晰的源文件、工作文件和输出文件结构：
 
-## 10. Content QA
+```text
+project/
+  source/
+    manuscript.docx 或 manuscript.pdf
+    figures/
+    supplementary/
+    templates/
+  work/
+    paper_text.md
+    figure_inventory.md
+    evidence_register.md
+    invention_graph.md
+    prior_art_map.md
+    claims_plan.md
+    content.json
+  output/
+    100001权利要求书.docx
+    100002说明书.docx
+    100003说明书附图.docx
+    100004说明书摘要.docx
+```
 
-Verify:
+如果用户把文件全部放在一个文件夹中，先分类：
 
-- every independent claim is supported by the specification;
-- every claimed component appears in embodiments;
-- every key effect is supported by a test or comparative example;
-- figure numbers match captions and figure descriptions;
-- terminology is consistent;
-- no unsupported numerical values are invented;
-- limitations from prior art are reflected in claim narrowing.
+- 论文主体：`.docx`、`.pdf`、`.md`、`.txt`；
+- 主图和补充图：`.png`、`.jpg`、`.jpeg`、`.tif`、`.tiff`、`.svg`、嵌入 `.docx` 的图片；
+- 补充信息：`.docx`、`.pdf`、`.xlsx`、`.csv`；
+- 专利模板：文件名类似 `100001权利要求书`、`100002说明书`、`100003说明书附图`、`100004说明书摘要`；
+- 旧专利稿：已有权利要求、说明书、技术交底书或代理人修改稿。
 
-## Suggested Content JSON Schema for the Builder
+## 2. 读取和标准化英文论文
+
+### 2.1 论文文本抽取
+
+完整读取英文论文和补充信息，不只读摘要。至少抽取：
+
+- 英文题目；
+- 摘要；
+- 引言中的技术痛点；
+- 实验方法；
+- 材料、组分、设备、结构单元；
+- 制备路线；
+- 装置或系统结构；
+- 应用场景；
+- 性能测试指标和数值；
+- 图题和每个子图含义；
+- 补充实验、补充图和补充表；
+- 公式、计算方法和测试条件；
+- 论文中暴露的局限性或失败条件。
+
+读取 `.docx` 时，应检查嵌入图片和表格。读取 `.pdf` 时，如果图文混排影响理解，应同时导出页面图片进行人工式核对。若使用 OCR，应在工作记录中标记并人工核对关键术语。
+
+### 2.2 建立图片清单 `figure_inventory.md`
+
+每张图都要记录其专利用途，而不是只记录论文图号。
+
+建议格式：
+
+```text
+源图：Fig. 3a-f
+候选专利图号：图3
+内容：压缩应力-应变曲线、循环回弹结果、分子耗能示意图
+支持的权利要求：复合气凝胶结构；压缩回弹用途；可重复使用过滤材料
+证据数值：70%应变应力 = ...；50次循环后高度损失 = ...
+输出用途：主文附图 / 摘要附图 / 不插入但用于说明书扩写
+问题：子图文字过小，后续正式提交前建议重绘为专利线图
+```
+
+专利附图优先选择能支持以下内容的图片：
+
+- 核心结构；
+- 制备流程；
+- 装置或系统架构；
+- 应用场景；
+- 测试装置；
+- 对比性能；
+- 能解释创造性的结构-效果机制。
+
+### 2.3 建立证据台账 `evidence_register.md`
+
+证据台账是防止胡写的核心文件。建议表格：
+
+| 证据编号 | 来源位置 | 原始事实或数值 | 专利用途 | 是否待确认 |
+| --- | --- | --- | --- | --- |
+| E1 | Methods, p.4 | 冷冻干燥条件为... | 实施例制备步骤 | 否 |
+| E2 | Fig.5b | PM2.5过滤效率为... | 有益效果和测试结果 | 否 |
+| E3 | 推测可放大范围 | 论文未公开 | 可能的从属权利要求 | 是 |
+
+未经确认的内容不得写入独立权利要求。若必须使用，只能在工作备注中标明 `待发明人确认`。
+
+## 3. 从论文逻辑转换为专利逻辑
+
+论文常见逻辑：
+
+```text
+科学问题 -> 设计假设 -> 表征 -> 机理解释 -> 性能测试 -> 应用展示
+```
+
+中国发明专利应改写为：
+
+```text
+技术领域 -> 现有技术缺陷 -> 客观技术问题 -> 技术方案 -> 有益效果 -> 附图说明 -> 具体实施方式 -> 测试方法与结果
+```
+
+转换规则：
+
+- `novel material` 要转化为明确的材料组成、结构、制备方法、产品或用途。
+- `mechanism` 要转化为结构产生效果的技术解释，服务于创造性。
+- `performance` 要转化为有益效果证据，必要时作为从属限定。
+- `application demo` 要转化为产品、系统、装置或用途实施例。
+- `control experiment` 要转化为对比例，用来证明关键组分或关键结构的贡献。
+
+## 4. 建立发明图谱 `invention_graph.md`
+
+在写权利要求之前必须先建立发明图谱。缺少这一步，容易把论文摘要翻译成保护范围混乱的专利稿。
+
+必须填写：
+
+```text
+中文发明名称：
+技术领域：
+最接近现有技术领域：
+现有技术缺陷：
+客观技术问题：
+核心技术方案：
+区别技术特征：
+必要技术特征：
+优选技术特征：
+可替换技术特征：
+制备步骤：
+工艺参数：
+产品、装置或用途形态：
+可测技术效果：
+对比例证据：
+附图证据：
+需要定义的术语：
+风险和缺失证据：
+```
+
+### 4.1 技术特征分级
+
+对所有技术特征进行分级：
+
+- `A 必要特征`：没有该特征，发明无法实现或新颖性明显不足；
+- `B 关键优选特征`：不是所有实施方式都必须有，但与技术效果强相关；
+- `C 可替换特征`：可替换材料、比例、结构、设备、工艺条件；
+- `D 论文解释特征`：有助于理解机理，但不适合写进权利要求；
+- `E 不应写入特征`：未证实推测、宣传语、商业愿景、政策性表达。
+
+独立权利要求主要使用 A 类特征，并在现有技术拥挤时加入必要的 B 类特征。从属权利要求用于布置 B 类和 C 类 fallback。
+
+## 5. 现有技术检索和阅读
+
+只要网络可用并且任务目标是提高授权概率，就应检索中文发明专利。优先使用官方或可核验专利来源。不要把网页摘要当成已经完整阅读权利要求。
+
+### 5.1 检索范围
+
+至少覆盖：
+
+- 相同材料体系；
+- 相同化学改性或交联机制；
+- 相同制备工艺；
+- 相同微结构、仿生结构或多孔结构；
+- 相同产品用途；
+- 相同装置或系统架构；
+- 相同性能问题；
+- 相同应用场景，例如阻燃、过滤、传感、自供能、报警、储能、生物医用等。
+
+同时使用中文和英文关键词，包含材料别名、缩写、商品名和关键功能词。
+
+### 5.2 最低阅读量
+
+严肃起草时，尽量阅读至少 20 篇相关中文发明专利公开文本。若实际可访问数量少于 20 篇，应说明原因并记录已读数量。
+
+每篇专利记录：
+
+```text
+公开号/申请号：
+名称：
+申请人：
+主权利要求核心内容：
+与本发明重叠之处：
+与本发明区别：
+威胁等级：高 / 中 / 低
+对本稿起草的影响：
+```
+
+### 5.3 建立现有技术地图 `prior_art_map.md`
+
+建议表格：
+
+| 编号 | 专利 | 已公开内容 | 与本发明重叠 | 剩余区别点 | 对权利要求的影响 |
+| --- | --- | --- | --- | --- | --- |
+| P1 | CN... | 壳聚糖气凝胶过滤材料 | 材料和用途重叠 | 未公开含氮改性木质素和自供能预警系统 | 主权利要求需限定复合网络和系统结构 |
+
+不要只堆专利列表。必须提炼每篇专利对保护边界的影响。
+
+### 5.4 专利性判断
+
+完成现有技术地图后，写出：
+
+- 最强新颖性来源；
+- 最强创造性论点；
+- 最拥挤或最薄弱的特征；
+- 明显过宽的独立权利要求范围；
+- 后续审查意见可用的 fallback 特征；
+- 材料、方法、产品、用途是否可能具有单一性。
+
+## 6. 设计权利要求树 `claims_plan.md`
+
+写权利要求书前，先设计权利要求树。
+
+### 6.1 选择权利要求类型
+
+根据论文内容选择：
+
+- 产品/材料权利要求：材料、组合物、结构、制品；
+- 制备方法权利要求：步骤、顺序、参数、后处理；
+- 装置/系统权利要求：部件、模块、连接关系、工作模式；
+- 用途权利要求：具体技术用途，不写空泛商业用途；
+- 检测/报警/过滤方法权利要求：仅在论文有系统或场景证据时使用。
+
+材料类论文的默认布局：
+
+```text
+权利要求1：产品/材料独立权利要求
+权利要求2-6：组分、结构、比例、孔结构、性能窗口等从属限定
+权利要求7：制备方法独立权利要求
+权利要求8-11：工艺参数和处理步骤
+权利要求12：产品、装置或系统独立权利要求
+权利要求13：用途权利要求
+权利要求14：检测、过滤、报警或应用方法权利要求
+```
+
+实际项数不固定，但每项必须有保护价值。
+
+### 6.2 独立权利要求规则
+
+独立权利要求必须：
+
+- 主题清楚；
+- 用技术特征限定保护范围；
+- 包含足以区别现有技术的结构、组成、步骤或连接关系；
+- 不只依赖性能结果；
+- 不使用没有支持的上位概念；
+- 不写无必要的过窄数值；
+- 不引用附图；
+- 不出现论文式机理讨论。
+
+差：
+
+```text
+一种高性能绿色过滤材料，其具有优异阻燃性和过滤效率。
+```
+
+好：
+
+```text
+一种复合气凝胶，其特征在于，包括交联的多糖网络、含氮改性木质素组分以及硅氧杂化阻隔组分；所述含氮改性木质素组分分布于所述多糖网络中，所述硅氧杂化阻隔组分与所述多糖网络和/或含氮改性木质素组分形成复合骨架。
+```
+
+### 6.3 从属权利要求梯度
+
+从宽到窄布置 fallback：
+
+1. 组分身份；
+2. 质量比、浓度或含量范围；
+3. 化学键、交联方式或分子间作用；
+4. 孔径、孔隙率、密度、厚度、层状结构；
+5. 制备工艺参数；
+6. 后处理条件；
+7. 由实施例支持的性能窗口；
+8. 应用场景中的结构组合；
+9. 传感、报警、信号采集或系统连接关系。
+
+每条从属权利要求应增加一个真正有意义的限定，不能只是重复主权利要求。
+
+### 6.4 数值范围规则
+
+只使用论文、补充信息、实验记录或发明人确认的数值。
+
+优先层级：
+
+```text
+宽范围：多个实施例或明确方法范围支持
+优选范围：最佳性能区间
+具体值：实施例数据
+```
+
+如果论文只有一个点，不要凭空扩成很宽范围。可以把具体值写入实施例，把范围标为 `待发明人确认`。
+
+### 6.5 常用权利要求模板
+
+产品/材料：
+
+```text
+1. 一种[产品/材料]，其特征在于，包括[必要组分A]、[必要组分B]和[必要结构或连接关系C]；其中，[限定核心结构、分布关系或复合方式]。
+```
+
+制备方法：
+
+```text
+X. 一种制备权利要求1-[n]任一项所述[产品/材料]的方法，其特征在于，包括如下步骤：
+S1、[前驱体或原料处理]；
+S2、[复合、反应或成型]；
+S3、[干燥、固化或后处理]，得到所述[产品/材料]。
+```
+
+装置/系统：
+
+```text
+Y. 一种[装置/系统]，其特征在于，包括[核心材料或部件]、[功能模块]和[连接关系]；所述[部件]用于[技术功能]。
+```
+
+用途：
+
+```text
+Z. 权利要求1-[n]任一项所述[产品/材料]在[具体技术场景]中的应用。
+```
+
+## 7. 起草说明书 `100002说明书.docx`
+
+默认章节：
+
+```text
+[发明名称]
+技术领域
+背景技术
+发明内容
+  要解决的技术问题
+  技术方案
+  有益效果
+附图说明
+具体实施方式
+  原料与设备
+  实施例
+  对比例
+  性能测试方法
+  性能测试结果
+```
+
+### 7.1 发明名称
+
+标题要技术化，不要宣传化。
+
+推荐：
+
+- `一种[核心材料]及其制备方法和应用`
+- `一种[复合结构/装置]及其制备方法`
+- `一种用于[具体用途]的[材料/装置/系统]`
+
+避免：
+
+- `高性能`、`新型`、`绿色环保`、`优异`，除非用户模板或领域习惯强烈要求。
+
+### 7.2 技术领域
+
+一段即可：
+
+```text
+本发明属于[一级技术领域]，具体涉及一种[核心材料/装置/方法]及其在[具体应用]中的应用。
+```
+
+### 7.3 背景技术
+
+写 2-5 段：
+
+1. 领域需求和主流技术；
+2. 最接近的已有方案；
+3. 已有方案的具体缺陷；
+4. 这些缺陷在目标应用中的后果。
+
+不要写成论文引言或文献综述。背景技术只服务于后文要解决的技术问题。
+
+可用缺陷表达：
+
+- `现有材料难以同时兼顾低压降、高过滤效率和火焰暴露后的结构完整性。`
+- `现有制备方法依赖复杂后处理，导致孔结构难以稳定复现。`
+- `现有报警系统需要外接电源，限制了其在一次性或轻量化防护用品中的应用。`
+
+### 7.4 发明内容
+
+分三部分写。
+
+要解决的技术问题：
+
+```text
+本发明旨在解决现有技术中[缺陷1]、[缺陷2]和/或[缺陷3]的问题。
+```
+
+技术方案：
+
+- 用说明书语言重述独立权利要求；
+- 补充优选实施方式和范围；
+- 术语必须与权利要求一致；
+- 不把实验结果写成唯一技术方案。
+
+有益效果：
+
+- 每个效果对应至少一个技术特征和一项证据；
+- 用“能够”“有利于”，不要随意写绝对结论；
+- 推荐结构：`由于...，因此...`。
+
+### 7.5 附图说明
+
+列出 `100003说明书附图.docx` 中所有图：
+
+```text
+图1为本发明实施例中[整体结构/制备流程/应用系统]示意图；
+图2为本发明实施例中[结构表征结果]图；
+...
+```
+
+如果使用论文多子图，应说明每个子图：
+
+```text
+图3中，图3a为...，图3b为...，图3c为...。
+```
+
+### 7.6 具体实施方式
+
+具体实施方式要让本领域技术人员能够复现。
+
+材料/工艺类实施例应包含：
+
+- 原料名称、规格或来源；
+- 质量、体积、浓度、摩尔比或质量比；
+- 加料顺序；
+- pH、温度、时间、转速、压力；
+- 成型、装配或复合方法；
+- 干燥、固化、冷冻干燥、热处理参数；
+- 产物形貌或样品尺寸；
+- 与性能测试对应的样品制备方式。
+
+### 7.7 实施例和对比例
+
+实施例支持权利要求，对比例证明创造性。
+
+建议最低结构：
+
+- `实施例1`：最佳或代表性方案；
+- `实施例2-3`：参数或组分变化；
+- `对比例1`：去除最关键组分；
+- `对比例2`：去除关键结构或关键工艺；
+- `对比例3`：商业产品或常规方案，若论文有数据。
+
+如果论文没有对比例，不要编造。应在工作备注中写明 `待补充对比例`，并在最终总结中指出授权风险。
+
+### 7.8 性能测试方法
+
+把论文 methods 改写为专利测试方法。应包含：
+
+- 样品制备；
+- 仪器型号或测试装置；
+- 测试标准或自建测试方法；
+- 环境条件；
+- 重复次数或循环次数；
+- 公式；
+- 结果计算方式。
+
+常见公式：
+
+```text
+过滤效率 E = (C0 - C1) / C0 × 100%
+压降 ΔP = Pupstream - Pdownstream
+品质因子 QF = -ln(1 - E) / ΔP
+循环保持率 R = value_after_cycle / initial_value × 100%
+```
+
+电学或自供能测试可写：
+
+```text
+当采集电压 V 在连续 t_min 时间内大于或等于报警阈值 V_alarm 时，判定为报警事件；
+当电压信号波形与预设呼吸、咳嗽或烟尘冲击信号特征相匹配时，判定对应行为或环境事件。
+```
+
+只写与本发明相关的公式，不堆无关测试。
+
+### 7.9 性能测试结果
+
+用专利式“结构-方法-效果”表达：
+
+```text
+由图[n]和表[n]可知，实施例1的[指标]为[数值]，优于对比例1的[数值]。这表明[关键结构/组分]能够[产生的技术效果]。
+```
+
+机理解释只写到支撑创造性所需的程度。不要写成论文 Discussion。
+
+## 8. 生成说明书附图 `100003说明书附图.docx`
+
+### 8.1 附图选择顺序
+
+优先选择：
+
+1. 总体结构、设计思路或制备流程图；
+2. 支持材料/产品权利要求的微观形貌或化学结构图；
+3. 支持结构稳定性的力学或循环结果；
+4. 支持核心用途的功能性能结果；
+5. 支持系统、装置或应用场景的演示图；
+6. 适合作为摘要附图的总览图。
+
+论文图太复杂时，仍可先生成草稿，但应在最终总结中建议后续重绘为专利线图或简化示意图。
+
+### 8.2 附图题名
+
+若模板要求图下有中文图题：
+
+```text
+图1  本发明实施例中复合材料的结构设计、制备流程和应用示意图。
+图2  本发明实施例中复合材料的微观形貌和化学结构表征图。
+```
+
+正文引用、附图说明、实际图题必须完全一致。
+
+## 9. 生成说明书摘要 `100004说明书摘要.docx`
+
+默认要求：
+
+- 一段中文摘要；
+- 不超过 300 个汉字，除非用户明确放宽；
+- 不写文献引用；
+- 不写“权利要求1”；
+- 不写论文背景铺垫；
+- 摘要文字后放一张摘要附图。
+
+推荐结构：
+
+```text
+本发明公开了一种[主题]及其制备方法和应用。所述[主题]包括[核心结构/组分]，通过[关键方法]形成[关键结构]。该结构能够解决[技术问题]，并在[具体应用]中表现出[核心效果]。本发明还公开了其制备方法及在[应用]中的用途。
+```
+
+摘要附图优先选择整体结构、制备流程或应用系统图，不优先选择单一性能曲线。
+
+## 10. 生成四件套文件
+
+### 10.1 使用用户模板
+
+如果用户提供四个模板文件，应检查并继承：
+
+- 页面大小；
+- 页边距；
+- 页眉页脚；
+- 字体字号；
+- 行距；
+- 段落对齐；
+- 标题样式；
+- 图题样式。
+
+若模板是 `.doc`，但用户要求 `.docx`，最终输出仍为 `.docx`。
+
+### 10.2 使用生成脚本
+
+完成专利内容后，创建 `content.json`，运行：
+
+```bash
+python scripts/build_patent_submission.py --content content.json --figures figures --out output_dir
+```
+
+脚本只是排版器。模型仍必须先完成技术事实提取、权利要求设计和专利文本起草。
+
+### 10.3 `content.json` 建议结构
 
 ```json
 {
-  "title": "中文发明名称",
-  "claims": ["1. ...", "2. ..."],
+  "title": "一种中文发明名称",
+  "claims": [
+    "1. 一种...",
+    "2. 根据权利要求1所述..."
+  ],
   "description": [
-    {"type": "title", "text": "中文发明名称"},
+    {"type": "title", "text": "一种中文发明名称"},
     {"type": "heading", "text": "技术领域"},
+    {"type": "paragraph", "text": "本发明属于..."},
+    {"type": "heading", "text": "背景技术"},
+    {"type": "paragraph", "text": "..."},
+    {"type": "heading", "text": "发明内容"},
+    {"type": "paragraph", "text": "..."},
+    {"type": "heading", "text": "附图说明"},
+    {"type": "paragraph", "text": "图1为..."},
+    {"type": "heading", "text": "具体实施方式"},
+    {"type": "subheading", "text": "实施例1"},
     {"type": "paragraph", "text": "..."}
   ],
   "table": {
-    "caption": "表1 ...",
-    "rows": [["样品", "结构差异", "效果"], ["实施例1", "...", "..."]]
+    "caption": "表1 实施例和对比例的性能测试结果",
+    "rows": [
+      ["样品", "结构差异", "过滤效率/%", "压降/Pa"],
+      ["实施例1", "...", "...", "..."]
+    ]
   },
   "drawings": [
-    {"caption": "图1 ...", "file": "figure_1.png"},
-    {"caption": "图2 ...", "file": "figure_2.png"}
+    {"caption": "图1 本发明实施例中复合材料的结构设计和应用示意图。", "file": "figure_1.png"},
+    {"caption": "图2 本发明实施例中复合材料的微观形貌和化学结构表征图。", "file": "figure_2.png"}
   ],
   "abstract": {
     "text": "300字以内中文摘要",
@@ -163,3 +625,82 @@ Verify:
   }
 }
 ```
+
+## 11. 结构 QA
+
+交付前必须检查：
+
+- 四个文件均存在；
+- 四个文件均为 `.docx`；
+- `100001权利要求书.docx` 只有权利要求文本，没有图片；
+- `100002说明书.docx` 至少包含：技术领域、背景技术、发明内容、附图说明、具体实施方式；
+- `100003说明书附图.docx` 包含全部选定主图；
+- `100004说明书摘要.docx` 包含摘要文本和 1 张摘要附图；
+- 正文和权利要求段落为两端对齐；
+- 图号连续且正文引用、附图说明、图题一致；
+- 摘要不超过 300 个汉字，除非用户明确放宽；
+- 不残留旧模板关键词；
+- 不残留论文表达：`Fig.`、`Table S`、`we`、`our`、`this study`、`manuscript`、`DOI`、参考文献列表；
+- 所有 `.docx` 可由 `python-docx` 打开；
+- 若本机有 Word 或 LibreOffice，应进行页面级渲染检查。
+
+建议做包级 XML 检索，检查旧模板术语、源论文残留和禁用表达。
+
+## 12. 实质 QA
+
+交付前建立权利要求支持矩阵：
+
+| 权利要求 | 必要特征 | 说明书支持 | 实施例支持 | 附图/表格支持 | 风险 |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 组分A + 组分B + 网络C | 发明内容、实施例1 | 有 | 图1、图2 | 中 |
+
+逐项检查：
+
+- 每个权利要求术语在说明书中都有一致表述；
+- 每个独立权利要求相对现有技术有明确区别；
+- 每个从属权利要求提供真实 fallback；
+- 所有数值和范围有来源；
+- 所有效果有测试证据或图片观察支持；
+- 不存在只靠“性能好”支撑创造性的权利要求；
+- 背景技术缺陷与本发明效果对应；
+- 摘要未引入权利要求和说明书没有的新特征；
+- 附图没有引入无法解释的部件；
+- 实施例足以让本领域技术人员复现。
+
+## 13. 最终交付说明
+
+最终回复用户时说明：
+
+- 输出文件夹；
+- 四个文件名；
+- 权利要求数量；
+- 附图数量和摘要附图；
+- 主权利要求保护策略；
+- 已执行的验证；
+- 仍标记为 `待发明人确认` 的事项。
+
+如果稿件因为缺少对比例、缺少参数范围、缺少原始图或现有技术过近而授权风险较高，应直接指出，并列出最值得补充的实验或材料。
+
+## 14. 下次一键执行顺序
+
+当用户下次提供英文论文并要求生成中国发明专利四件套时，按以下顺序执行：
+
+1. 列出并分类所有输入文件；
+2. 抽取论文正文、方法、图片、表格和补充数据；
+3. 建立 `figure_inventory.md` 图片清单；
+4. 建立 `evidence_register.md` 证据台账；
+5. 建立 `invention_graph.md` 发明图谱；
+6. 在网络和时间允许时检索并阅读中文发明专利；
+7. 建立 `prior_art_map.md` 现有技术地图；
+8. 建立 `claims_plan.md` 权利要求树；
+9. 起草权利要求书；
+10. 起草说明书；
+11. 选择并处理说明书附图；
+12. 起草说明书摘要；
+13. 生成 `content.json`；
+14. 使用脚本或模板生成四个 `.docx`；
+15. 运行结构 QA；
+16. 运行实质 QA；
+17. 交付四件套文件和简短验证报告。
+
+只有在缺失事实会实质影响独立权利要求、发明名称、申请主体信息或是否纳入未经确认数据时，才停下来问用户。其他情况下，采用保守写法继续推进，并在工作文件中标记不确定项。

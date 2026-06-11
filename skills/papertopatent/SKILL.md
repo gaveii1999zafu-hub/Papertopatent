@@ -21,20 +21,21 @@ Transform an English research paper into a Chinese national invention patent fil
 - `100003说明书附图.docx`
 - `100004说明书摘要.docx`
 
-Use the workflow in `references/workflow.md` for detailed drafting rules and QA gates. Use `scripts/build_patent_submission.py` when structured content and figure paths are ready.
+For any raw English-paper-to-patent conversion, read `references/workflow.md` before drafting. The workflow is the controlling protocol for extracting evidence, building the invention graph, reading prior art, planning claims, generating the four files, and checking the result. Use `scripts/build_patent_submission.py` only after structured Chinese patent content and figure paths are ready.
 
 ## Core Workflow
 
 1. Read all user-provided files: paper, figures, supplementary information, videos, cover letter, patent template files, and prior draft if present.
-2. Extract the invention, not the paper story: technical field, prior-art defects, structural features, preparation steps, applications, experimental effects, figures, and comparative examples.
-3. Search and read Chinese patent prior art when network is available, prioritizing CN invention patents in similar material, process, device, and application directions. Do not fabricate prior art. If official CNIPA or patent pages are inaccessible, state the access limit and use available verifiable sources.
-4. Draft the patent around protectable technical features:
+2. Normalize the paper into working notes: `figure_inventory.md`, `evidence_register.md`, `invention_graph.md`, `prior_art_map.md`, and `claims_plan.md` when the task is substantive.
+3. Extract the invention, not the paper story: technical field, prior-art defects, structural features, preparation steps, applications, experimental effects, figures, and comparative examples.
+4. Search and read Chinese patent prior art when network is available, prioritizing CN invention patents in similar material, process, device, and application directions. Do not fabricate prior art. If official CNIPA or patent pages are inaccessible, state the access limit and use available verifiable sources.
+5. Draft the patent around protectable technical features:
    - claims define structure/process/device/use boundaries;
    - specification supports every claim with embodiments, examples, and effects;
    - drawings are separated into the drawings file;
    - abstract is concise and under 300 Chinese characters unless the user asks otherwise.
-5. Generate the four filing files in `.docx` format. Keep claim and specification text justified. Keep document headers, major headings, figure captions, and abstract-figure labels centered when appropriate.
-6. Verify structure before delivery: all four files exist, claims have no figures, specification has no inserted figures, drawings file contains all drawing images, abstract file contains one abstract figure, old template residue is absent, and all `.docx` files open.
+6. Generate the four filing files in `.docx` format. Keep claim and specification text justified. Keep document headers, major headings, figure captions, and abstract-figure labels centered when appropriate.
+7. Verify structure and substance before delivery: all four files exist, claims have no figures, specification has no inserted figures, drawings file contains all drawing images, abstract file contains one abstract figure, old template residue is absent, each claim has support, and all `.docx` files open.
 
 ## Patent Drafting Rules
 
@@ -45,6 +46,7 @@ Use the workflow in `references/workflow.md` for detailed drafting rules and QA 
 - Use comparative examples to prove inventive contribution. At minimum, include controls that remove each key component or structural feature.
 - Do not put figures in the claims. Do not put experimental raw figure panels in the specification body when a separate drawings file is required.
 - Use consistent terminology across claims, specification, abstract, and drawing captions.
+- If evidence is missing, mark it in working notes as `待发明人确认`; do not silently invent data or broaden the claim beyond support.
 
 ## Output Format Rules
 

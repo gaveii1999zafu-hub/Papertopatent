@@ -2,6 +2,10 @@
 
 Codex skill for converting an English scientific manuscript into Chinese national invention patent filing documents.
 
+The complete paper-to-patent workflow is in:
+
+`skills/papertopatent/references/workflow.md`
+
 ## Install
 
 Use Codex's skill installer with the GitHub URL:
